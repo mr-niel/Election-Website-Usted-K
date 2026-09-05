@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>USTED Elections — Vote</title>
+  <link rel="stylesheet" href="assets/css/styles.css">
+</head>
+<body>
+
+<div id="nav"></div>
+
+<div class="page-banner">
+  <div class="page-banner-overlay"></div>
+  <div class="page-banner-content">
+    <img class="page-banner-logo" src="public/AAMUSTED_id6YoLL7u-_0.png" alt="USTED logo">
+    <div>
+      <h1>Voter Portal</h1>
+      <p>Register, verify your identity, and cast your ballot.</p>
+    </div>
+  </div>
+</div>
+
+<!-- AUTH VIEW -->
+<div id="authView" class="container">
+  <div class="auth-card">
+
+    <!-- LOGIN -->
+    <div id="loginForm">
+      <h2>Sign In</h2>
+      <p class="sub-title">Enter your student ID and password to vote.</p>
+      <div id="authAlert"></div>
+      <label>Student ID</label>
+      <input id="loginStudentId" type="text" placeholder="e.g. 20210045">
+      <label>Password</label>
+      <input id="loginPassword" type="password">
+      <button class="btn btn-primary btn-full mt-2" id="loginBtn">Sign In</button>
+      <p class="sub-title mt-2">No account? <a href="#" id="showRegister">Register here</a></p>
+    </div>
+
+    <!-- REGISTER -->
+    <div id="registerForm" class="hidden">
+      <h2>Create Account</h2>
+      <p class="sub-title">Fill in your details. After registration you will need to upload your student ID photo and verify your phone number with an OTP code.</p>
+      <div id="regAlert"></div>
+      <label>Student ID / Index Number</label>
+      <input id="regStudentId" type="text" placeholder="e.g. 20210045">
+      <label>Full Name</label>
+      <input id="regFullName" type="text">
+      <label>Email</label>
+      <input id="regEmail" type="email">
+      <label>Phone Number</label>
+      <input id="regPhone" type="tel" placeholder="e.g. 0241234567">
+      <p class="text-sm text-muted mt-1">Ghana phone number. You will receive an OTP code via SMS to verify this number.</p>
+      <label>Campus</label>
+      <select id="regCampus"></select>
+      <label>Department</label>
+      <select id="regDepartment" disabled><option>Select campus first</option></select>
+      <label>Programme</label>
+      <select id="regProgramme" disabled><option>Select department first</option></select>
+      <label>Hall of Residence (optional)</label>
+      <select id="regHall"></select>
+      <div class="form-grid">
+        <div>
+          <label>Level</label>
+          <select id="regLevel">
+            <option value="100">Level 100</option>
+            <option value="200">Level 200</option>
+            <option value="300">Level 300</option>
+            <option value="400">Level 400</option>
+          </select>
+        </div>
+        <div>
+          <label>Gender</label>
+          <select id="regGender">
+            <option value="male">Male</option>
+            <option value="female">Female</option>
+          </select>
+        </div>
+      </div>
+      <label>Password (min 6 characters)</label>
+      <input id="regPassword" type="password">
+      <button class="btn btn-primary btn-full mt-2" id="registerBtn">Create Account</button>
+      <p class="sub-title mt-2">Already have an account? <a href="#" id="showLogin">Sign in</a></p>
+    </div>
+
+    <!-- STEP 2: ID PHOTO UPLOAD -->
+    <div id="idPhotoForm" class="hidden">
+      <h2>Upload Student ID</h2>
+      <p class="sub-title">Take a clear photo of your USTED student ID card. The election officer will review it before approving your account.</p>
+      <div id="idPhotoAlert"></div>
+
+      <div class="camera-section">
+        <div id="cameraPreview" class="camera-preview">
+          <p class="text-muted text-center" style="padding:40px 10px">Click "Open Camera" to take a photo of your ID card.</p>
+        </div>
+        <video id="cameraVideo" class="hidden" autoplay playsinline></video>
+        <canvas id="cameraCanvas" class="hidden"></canvas>
+        <div class="camera-controls">
+          <button class="btn btn-outline" id="openCameraBtn">Open Camera</button>
+          <button class="btn btn-primary hidden" id="captureBtn">Capture Photo</button>
+          <button class="btn btn-outline hidden" id="retakeBtn">Retake</button>
+        </div>
+      </div>
+
+      <div id="idPreview" class="id-preview hidden">
+        <p class="text-sm">Photo captured. Click "Upload ID" to continue.</p>
+        <img id="idThumb" alt="ID card preview">
+      </div>
+
+      <p class="text-muted text-sm mt-1">Or choose a file instead:</p>
+      <input id="idFileInput" type="file" accept="image/jpeg,image/png,image/webp">
+
+      <button class="btn btn-primary btn-full mt-2" id="uploadIdBtn">Upload ID</button>
+      <button class="btn btn-outline btn-full mt-1" id="skipIdBtn">I'll do this later</button>
+      <p class="sub-title mt-2"><a href="#" id="idBackToLogin">Back to sign in</a></p>
+    </div>
+
+    <!-- STEP 3: OTP VERIFICATION -->
+    <div id="otpForm" class="hidden">
+      <h2>Verify Your Phone</h2>
+      <p class="sub-title">We will send a 6-digit verification code to your phone via SMS.</p>
+      <div id="otpAlert"></div>
+      <p class="text-sm text-muted" id="otpPhoneDisplay"></p>
+      <button class="btn btn-primary btn-full" id="sendOtpBtn">Send OTP Code</button>
+      <div id="otpInputArea" class="hidden mt-2">
+        <label>Enter the 6-digit code</label>
+        <input id="otpCode" type="text" maxlength="6" placeholder="e.g. 123456" style="text-align:center;font-size:1.5rem;letter-spacing:0.3em">
+        <button class="btn btn-primary btn-full mt-2" id="verifyOtpBtn">Verify Code</button>
+        <button class="btn btn-outline btn-full mt-1" id="resendOtpBtn">Resend Code</button>
+      </div>
+      <p class="sub-title mt-2"><a href="#" id="otpBackToLogin">Back to sign in</a></p>
+    </div>
+
+  </div>
+</div>
+
+<!-- BALLOT VIEW -->
+<div id="ballotView" class="container hidden">
+  <div class="alert info" id="voterBanner"></div>
+  <div id="ballotArea"></div>
+  <div id="castAlert"></div>
+</div>
+
+<script src="assets/js/api.js"></script>
+<script>
+const $ = (id) => document.getElementById(id);
+let selections = {}; // election_id -> { position_id -> candidate_id }
+let registeredVoterId = null;
+let cameraStream = null;
+let capturedIdBlob = null;
+
+document.getElementById('nav').appendChild(renderNavbar('vote'));
+
+// ----- load campuses and halls for registration -----
+async function loadRegDropdowns() {
+  try {
+    const [camp, hallData] = await Promise.all([API.campuses(), API.halls()]);
+    const cs = $('regCampus');
+    cs.innerHTML = '<option value="">Select campus...</option>';
+    camp.campuses.forEach(c => cs.appendChild(el('option', { value: c.id, text: c.name })));
+    const hs = $('regHall');
+    hs.innerHTML = '<option value="">No hall / Not applicable</option>';
+    hallData.halls.forEach(h => hs.appendChild(el('option', { value: h.id, text: h.name })));
+  } catch (e) { /* ignore */ }
+}
+
+// ----- cascade: campus -> departments -----
+$('regCampus').onchange = async () => {
+  const cid = parseInt($('regCampus').value, 10);
+  const ds = $('regDepartment');
+  const ps = $('regProgramme');
+  if (!cid) { ds.disabled = true; ps.disabled = true; ds.innerHTML = '<option>Select campus first</option>'; return; }
+  ds.disabled = true; ds.innerHTML = '<option>Loading...</option>';
+  try {
+    const data = await API.departments({ campus_id: cid });
+    ds.innerHTML = '<option value="">Select department...</option>';
+    data.departments.forEach(d => ds.appendChild(el('option', { value: d.id, text: d.name })));
+    ds.disabled = false;
+  } catch (e) { ds.innerHTML = '<option>Error loading</option>'; }
+  ps.disabled = true; ps.innerHTML = '<option>Select department first</option>';
+};
+
+// ----- cascade: department -> programmes -----
+$('regDepartment').onchange = async () => {
+  const did = parseInt($('regDepartment').value, 10);
+  const ps = $('regProgramme');
+  if (!did) { ps.disabled = true; ps.innerHTML = '<option>Select department first</option>'; return; }
+  ps.disabled = true; ps.innerHTML = '<option>Loading...</option>';
+  try {
+    const data = await API.programmes({ department_id: did });
+    ps.innerHTML = '<option value="">Select programme...</option>';
+    data.programmes.forEach(p => ps.appendChild(el('option', { value: p.id, text: p.name })));
+    ps.disabled = false;
+  } catch (e) { ps.innerHTML = '<option>Error loading</option>'; }
+};
+
+// ----- toggle views -----
+function showView(name) {
+  ['loginForm', 'registerForm', 'idPhotoForm', 'otpForm'].forEach(v => $(v).classList.add('hidden'));
+  $(name).classList.remove('hidden');
+}
+
+$('showRegister').onclick = (e) => { e.preventDefault(); showView('registerForm'); };
+$('showLogin').onclick = (e) => { e.preventDefault(); showView('loginForm'); };
+$('idBackToLogin').onclick = (e) => { e.preventDefault(); stopCamera(); showView('loginForm'); };
+$('otpBackToLogin').onclick = (e) => { e.preventDefault(); showView('loginForm'); };
+
+// ----- login -----
+$('loginBtn').onclick = async () => {
+  showAlert($('authAlert'), 'info', 'Signing in...');
+  try {
+    const r = await API.login({
+      student_id: $('loginStudentId').value.trim(),
+      password: $('loginPassword').value,
+    });
+    showAlert($('authAlert'), 'success', r.message);
+    showBallot();
+  } catch (e) {
+    showAlert($('authAlert'), 'error', e.message);
+    if (e.data && e.data.needs_otp && e.data.voter_id) {
+      registeredVoterId = e.data.voter_id;
+      showAlert($('authAlert'), 'info', 'Redirecting to OTP verification...');
+      setTimeout(() => {
+        showView('otpForm');
+        $('otpPhoneDisplay').textContent = '';
+        $('otpInputArea').classList.add('hidden');
+      }, 1500);
+    }
+  }
+};
+
+// ----- register -----
+$('registerBtn').onclick = async () => {
+  showAlert($('regAlert'), 'info', 'Creating account...');
+  try {
+    const r = await API.register({
+      student_id:    $('regStudentId').value.trim(),
+      full_name:     $('regFullName').value.trim(),
+      email:         $('regEmail').value.trim(),
+      phone:         $('regPhone').value.trim(),
+      campus_id:     parseInt($('regCampus').value, 10),
+      department_id: parseInt($('regDepartment').value, 10),
+      programme_id:  parseInt($('regProgramme').value, 10),
+      hall_id:       parseInt($('regHall').value, 10) || 0,
+      level:         $('regLevel').value,
+      gender:        $('regGender').value,
+      password:      $('regPassword').value,
+    });
+    registeredVoterId = r.voter_id;
+    showAlert($('regAlert'), 'success', r.message);
+    setTimeout(() => showView('idPhotoForm'), 1000);
+  } catch (e) {
+    showAlert($('regAlert'), 'error', e.message);
+  }
+};
+
+// ============================================================
+//  CAMERA + ID PHOTO
+// ============================================================
+$('openCameraBtn').onclick = async () => {
+  try {
+    cameraStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: 'environment' }
+    });
+    const video = $('cameraVideo');
+    video.srcObject = cameraStream;
+    video.classList.remove('hidden');
+    $('cameraPreview').classList.add('hidden');
+    $('openCameraBtn').classList.add('hidden');
+    $('captureBtn').classList.remove('hidden');
+  } catch (e) {
+    showAlert($('idPhotoAlert'), 'error', 'Could not access camera. You can use the file upload option below instead.');
+  }
+};
+
+$('captureBtn').onclick = () => {
+  const video = $('cameraVideo');
+  const canvas = $('cameraCanvas');
+  const w = video.videoWidth || 640;
+  const h = video.videoHeight || 480;
+  canvas.width = w;
+  canvas.height = h;
+  canvas.getContext('2d').drawImage(video, 0, 0, w, h);
+  canvas.toBlob((blob) => {
+    capturedIdBlob = blob;
+    const url = URL.createObjectURL(blob);
+    $('idThumb').src = url;
+    $('idPreview').classList.remove('hidden');
+    $('captureBtn').classList.add('hidden');
+    $('retakeBtn').classList.remove('hidden');
+  }, 'image/jpeg', 0.85);
+  stopCamera();
+};
+
+$('retakeBtn').onclick = () => {
+  capturedIdBlob = null;
+  $('idPreview').classList.add('hidden');
+  $('retakeBtn').classList.add('hidden');
+  $('cameraPreview').classList.remove('hidden');
+  $('openCameraBtn').classList.remove('hidden');
+};
+
+function stopCamera() {
+  if (cameraStream) {
+    cameraStream.getTracks().forEach(t => t.stop());
+    cameraStream = null;
+  }
+  $('cameraVideo').classList.add('hidden');
+  $('captureBtn').classList.add('hidden');
+}
+
+$('uploadIdBtn').onclick = async () => {
+  let blob = capturedIdBlob;
+  let fileInput = $('idFileInput');
+
+  if (!blob && fileInput.files.length > 0) {
+    blob = fileInput.files[0];
+  }
+  if (!blob) {
+    showAlert($('idPhotoAlert'), 'error', 'Please take a photo or choose a file first.');
+    return;
+  }
+  if (!registeredVoterId) {
+    showAlert($('idPhotoAlert'), 'error', 'Session expired. Please register again.');
+    showView('registerForm');
+    return;
+  }
+
+  showAlert($('idPhotoAlert'), 'info', 'Uploading ID photo...');
+  try {
+    const form = new FormData();
+    form.append('voter_id', String(registeredVoterId));
+    form.append('id_photo', blob);
+    const r = await API.uploadIdPhoto(form);
+    showAlert($('idPhotoAlert'), 'success', 'ID photo uploaded! Now verify your phone number.');
+    setTimeout(() => {
+      showView('otpForm');
+      $('otpInputArea').classList.add('hidden');
+    }, 1000);
+  } catch (e) {
+    showAlert($('idPhotoAlert'), 'error', e.message);
+  }
+};
+
+$('skipIdBtn').onclick = () => {
+  showAlert($('idPhotoAlert'), 'info', 'You can upload your ID later, but your account cannot be approved without it.');
+  setTimeout(() => {
+    showView('otpForm');
+    $('otpInputArea').classList.add('hidden');
+  }, 1500);
+};
+
+// ============================================================
+//  OTP
+// ============================================================
+$('sendOtpBtn').onclick = async () => {
+  if (!registeredVoterId) {
+    showAlert($('otpAlert'), 'error', 'Session expired. Please register or sign in again.');
+    showView('loginForm');
+    return;
+  }
+  showAlert($('otpAlert'), 'info', 'Sending OTP code...');
+  $('sendOtpBtn').disabled = true;
+  try {
+    const r = await API.sendOtp({ voter_id: registeredVoterId });
+    $('otpPhoneDisplay').textContent = 'Code sent to ' + r.phone;
+    showAlert($('otpAlert'), 'success', r.message);
+    $('otpInputArea').classList.remove('hidden');
+    $('sendOtpBtn').textContent = 'Resend Code';
+    $('sendOtpBtn').disabled = false;
+  } catch (e) {
+    showAlert($('otpAlert'), 'error', e.message);
+    $('sendOtpBtn').disabled = false;
+  }
+};
+
+$('resendOtpBtn').onclick = () => $('sendOtpBtn').click();
+
+$('verifyOtpBtn').onclick = async () => {
+  const code = $('otpCode').value.trim();
+  if (code.length !== 6) {
+    showAlert($('otpAlert'), 'error', 'Please enter the 6-digit code.');
+    return;
+  }
+  showAlert($('otpAlert'), 'info', 'Verifying...');
+  $('verifyOtpBtn').disabled = true;
+  try {
+    const r = await API.verifyOtp({ voter_id: registeredVoterId, code });
+    showAlert($('otpAlert'), 'success', r.message);
+    setTimeout(() => {
+      showView('loginForm');
+      $('otpCode').value = '';
+      $('otpInputArea').classList.add('hidden');
+      $('otpPhoneDisplay').textContent = '';
+    }, 2000);
+  } catch (e) {
+    showAlert($('otpAlert'), 'error', e.message);
+    $('verifyOtpBtn').disabled = false;
+  }
+};
+
+// ----- show ballot -----
+async function showBallot() {
+  $('authView').classList.add('hidden');
+  $('ballotView').classList.remove('hidden');
+  const area = $('ballotArea');
+  area.innerHTML = '<p class="text-muted">Loading ballot...</p>';
+  try {
+    const data = await API.ballot();
+    const voter = data.voter;
+
+    $('voterBanner').textContent =
+      'Signed in as ' + voter.full_name + ' (' + voter.student_id + ')';
+
+    if (data.elections.length === 0) {
+      area.innerHTML = '<div class="alert warning">No elections are available for you right now. Please check back later.</div>';
+      return;
+    }
+
+    area.innerHTML = '';
+    selections = {};
+
+    data.elections.forEach(election => {
+      const card = el('div', { class: 'election-card' });
+      const header = el('div', { class: 'header' }, [
+        el('h3', { text: election.title }),
+        el('div', { class: 'row' }, [
+          el('span', { class: 'type-tag', text: election.type.toUpperCase() }),
+          el('span', { class: 'badge ' + election.status, text: election.status.toUpperCase() }),
+        ]),
+      ]);
+      card.appendChild(header);
+
+      const body = el('div', { class: 'body' });
+
+      if (election.voted) {
+        body.appendChild(el('div', { class: 'alert success', text: 'You have already voted in this election. Thank you!' }));
+        card.appendChild(body);
+        area.appendChild(card);
+        return;
+      }
+
+      if (!election.is_open) {
+        body.appendChild(el('div', { class: 'alert warning',
+          text: 'Voting is not open yet. Voting window: ' + election.start_time + ' to ' + election.end_time }));
+        card.appendChild(body);
+        area.appendChild(card);
+        return;
+      }
+
+      // render positions
+      selections[election.id] = {};
+      election.positions.forEach(pos => {
+        const block = el('div', { class: 'position-block' }, [
+          el('h3', { text: pos.title }),
+          el('div', { class: 'pos-desc', text: pos.description || '' }),
+        ]);
+        pos.candidates.forEach(cand => {
+          const row = el('label', { class: 'candidate', 'data-pid': pos.id, 'data-cid': cand.id, 'data-eid': election.id }, [
+            el('div', { class: 'photo' }, cand.photo_url
+              ? el('img', { src: cand.photo_url, alt: cand.full_name })
+              : initials(cand.full_name)),
+            el('div', {}, [
+              el('div', { class: 'name', text: cand.full_name }),
+              cand.department ? el('span', { class: 'dept-tag', text: cand.department }) : null,
+              cand.manifesto ? el('div', { class: 'manifesto', text: cand.manifesto }) : null,
+            ]),
+            el('input', { type: 'radio', name: 'pos_' + election.id + '_' + pos.id, value: cand.id }),
+          ]);
+          row.onclick = () => {
+            block.querySelectorAll('.candidate').forEach(c => c.classList.remove('selected'));
+            row.classList.add('selected');
+            row.querySelector('input').checked = true;
+            selections[election.id][pos.id] = cand.id;
+          };
+          block.appendChild(row);
+        });
+        if (pos.candidates.length === 0) {
+          block.appendChild(el('p', { class: 'text-muted', text: 'No candidates for this position yet.' }));
+        }
+        body.appendChild(block);
+      });
+
+      // submit button
+      const submitBtn = el('button', { class: 'btn btn-gold btn-full mt-2', text: 'Submit My Vote' });
+      submitBtn.onclick = () => castVote(election.id, submitBtn);
+      body.appendChild(submitBtn);
+      const castAlertBox = el('div', { id: 'castAlert_' + election.id, style: 'margin-top:10px' });
+      body.appendChild(castAlertBox);
+
+      card.appendChild(body);
+      area.appendChild(card);
+    });
+  } catch (e) {
+    area.innerHTML = '<div class="alert error">' + e.message + '</div>';
+  }
+}
+
+// ----- cast vote -----
+async function castVote(electionId, btn) {
+  const sel = selections[electionId] || {};
+  const votes = Object.keys(sel).map(pid => ({
+    position_id: parseInt(pid, 10),
+    candidate_id: sel[pid],
+  }));
+  const alertBox = $('castAlert_' + electionId);
+  if (votes.length === 0) {
+    showAlert(alertBox, 'error', 'Please select at least one candidate before submitting.');
+    return;
+  }
+  btn.disabled = true; btn.textContent = 'Submitting...';
+  try {
+    const r = await API.cast({ election_id: electionId, votes });
+    showAlert(alertBox, 'success', r.message);
+    btn.style.display = 'none';
+    setTimeout(showBallot, 1500);
+  } catch (e) {
+    showAlert(alertBox, 'error', e.message);
+    btn.disabled = false; btn.textContent = 'Submit My Vote';
+  }
+}
+
+// ----- on load -----
+(async function () {
+  await loadRegDropdowns();
+  try {
+    const me = await API.me();
+    if (me.authenticated && me.role === 'voter') {
+      showBallot();
+    } else {
+      maybeStartTour('vote');
+    }
+  } catch (e) {
+    maybeStartTour('vote');
+  }
+})();
+</script>
+</body>
+</html>

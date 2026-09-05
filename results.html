@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>USTED Elections — Live Results</title>
+  <link rel="stylesheet" href="assets/css/styles.css">
+</head>
+<body>
+
+<div id="nav"></div>
+
+<div class="page-banner">
+  <div class="page-banner-overlay"></div>
+  <div class="page-banner-content">
+    <img class="page-banner-logo" src="public/AAMUSTED_id6YoLL7u-_0.png" alt="USTED logo">
+    <div>
+      <h1>Live Results</h1>
+      <p>Real-time vote tallies for every election. Updates automatically.</p>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- Turnout stats -->
+  <div class="card">
+    <h2>Turnout Overview</h2>
+    <div id="turnout" class="grid-4"></div>
+  </div>
+
+  <!-- Campus breakdown -->
+  <div class="card" id="campusCard" style="display:none">
+    <h2>Turnout by Campus</h2>
+    <div class="table-wrap">
+      <table id="campusTable">
+        <thead><tr><th>Campus</th><th>Approved</th><th>Voted</th><th>Turnout %</th></tr></thead>
+        <tbody id="campusBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Election tabs -->
+  <div class="tabs" id="electionTabs"></div>
+
+  <!-- Results area -->
+  <div id="resultsArea"></div>
+
+</div>
+
+<div class="footer">
+  USTED Student Election System &mdash; University of Skills Training and Entrepreneurial Development<br>
+  <a href="https://usted.edu.gh">usted.edu.gh</a>
+</div>
+
+<script src="assets/js/api.js"></script>
+<script>
+const $ = (id) => document.getElementById(id);
+document.getElementById('nav').appendChild(renderNavbar('results'));
+
+let refreshTimer = null;
+let allElections = [];
+let activeElectionId = null;
+
+async function loadResults() {
+  try {
+    const [res, turn] = await Promise.all([API.results(), API.turnout()]);
+
+    // turnout cards
+    const t = $('turnout');
+    t.innerHTML = '';
+    t.appendChild(el('div', { class: 'stat-card' }, [
+      el('div', { class: 'num', text: String(turn.approved_voters) }),
+      el('div', { class: 'label', text: 'Approved Voters' }),
+    ]));
+    t.appendChild(el('div', { class: 'stat-card' }, [
+      el('div', { class: 'num', text: String(turn.voted) }),
+      el('div', { class: 'label', text: 'Votes Cast (SRC)' }),
+    ]));
+    t.appendChild(el('div', { class: 'stat-card' }, [
+      el('div', { class: 'num', text: turn.turnout_percent + '%' }),
+      el('div', { class: 'label', text: 'Turnout' }),
+    ]));
+    t.appendChild(el('div', { class: 'stat-card' }, [
+      el('div', { class: 'num', text: (turn.male_voted || 0) + '/' + (turn.female_voted || 0) }),
+      el('div', { class: 'label', text: 'Male / Female Voted' }),
+    ]));
+
+    // campus breakdown
+    if (turn.campus_breakdown && turn.campus_breakdown.length > 0) {
+      $('campusCard').style.display = 'block';
+      const cb = $('campusBody');
+      cb.innerHTML = '';
+      turn.campus_breakdown.forEach(c => {
+        const approved = parseInt(c.approved || 0, 10);
+        const voted = parseInt(c.voted || 0, 10);
+        const pct = approved > 0 ? Math.round((voted / approved) * 100) : 0;
+        cb.appendChild(el('tr', {}, [
+          el('td', { text: c.campus }),
+          el('td', { text: String(approved) }),
+          el('td', { text: String(voted) }),
+          el('td', { text: pct + '%' }),
+        ]));
+      });
+    }
+
+    // election tabs
+    const tabs = $('electionTabs');
+    const elections = res.elections || [];
+    if (elections.length > 0) {
+      tabs.innerHTML = '';
+      elections.forEach(e => {
+        const tab = el('button', { class: 'tab' + (activeElectionId === e.id ? ' active' : ''), text: e.title });
+        tab.onclick = () => {
+          activeElectionId = e.id;
+          renderElection(e);
+          tabs.querySelectorAll('.tab').forEach(t2 => t2.classList.remove('active'));
+          tab.classList.add('active');
+        };
+        tabs.appendChild(tab);
+      });
+      // auto-select first if none active
+      if (!activeElectionId || !elections.find(e => e.id === activeElectionId)) {
+        activeElectionId = elections[0].id;
+        renderElection(elections[0]);
+        tabs.firstChild.classList.add('active');
+      } else {
+        const e = elections.find(e => e.id === activeElectionId);
+        if (e) renderElection(e);
+      }
+    } else {
+      tabs.innerHTML = '';
+      $('resultsArea').innerHTML = '<div class="alert info">No elections configured yet.</div>';
+    }
+  } catch (e) {
+    $('resultsArea').innerHTML = '<div class="alert error">' + e.message + '</div>';
+  }
+}
+
+function renderElection(election) {
+  const area = $('resultsArea');
+  area.innerHTML = '';
+
+  const header = el('div', { class: 'card' }, [
+    el('div', { class: 'row' }, [
+      el('h2', { text: election.title }),
+      el('div', { class: 'spacer' }),
+      el('span', { class: 'badge ' + election.status, text: election.status.toUpperCase() }),
+    ]),
+    el('p', { class: 'text-sm text-muted', text:
+      (election.campus_name || '') +
+      (election.department_name ? ' · ' + election.department_name : '') +
+      (election.hall_name ? ' · ' + election.hall_name : '') +
+      ' · Total votes: ' + election.total_votes }),
+  ]);
+  area.appendChild(header);
+
+  if (election.positions.length === 0) {
+    area.appendChild(el('div', { class: 'alert info', text: 'No positions configured for this election yet.' }));
+    return;
+  }
+
+  election.positions.forEach(pos => {
+    const max = Math.max(1, ...pos.candidates.map(c => c.votes));
+    const block = el('div', { class: 'results-position' }, [
+      el('h3', { text: pos.title }),
+    ]);
+    if (pos.candidates.length === 0) {
+      block.appendChild(el('p', { class: 'text-muted', text: 'No candidates.' }));
+    } else {
+      pos.candidates.forEach(cand => {
+        const pct = max > 0 ? Math.round((cand.votes / max) * 100) : 0;
+        const isLead = cand.votes === max && cand.votes > 0;
+        block.appendChild(el('div', { class: 'bar-row' }, [
+          el('div', { class: 'top' }, [
+            el('span', { class: 'name' }, [
+              cand.photo_url ? el('img', { class: 'result-photo', src: cand.photo_url, alt: cand.full_name }) : null,
+              el('span', { text: cand.full_name }),
+            ]),
+            isLead ? el('span', { class: 'winner-tag', text: 'LEADING' }) : null,
+            el('span', { class: 'count', text: cand.votes + ' votes' }),
+          ]),
+          cand.department ? el('div', { class: 'dept-label', text: cand.department }) : null,
+          el('div', { class: 'bar' }, [
+            el('div', { class: isLead ? 'lead' : '', style: 'width:' + pct + '%' }),
+          ]),
+        ]));
+      });
+    }
+    area.appendChild(block);
+  });
+}
+
+loadResults();
+refreshTimer = setInterval(loadResults, 15000);
+maybeStartTour('results');
+</script>
+</body>
+</html>

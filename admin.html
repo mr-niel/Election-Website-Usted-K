@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>USTED Elections — Officer Area</title>
+  <link rel="stylesheet" href="assets/css/styles.css">
+</head>
+<body>
+
+<div id="nav"></div>
+
+<div class="page-banner">
+  <div class="page-banner-overlay"></div>
+  <div class="page-banner-content">
+    <img class="page-banner-logo" src="public/AAMUSTED_id6YoLL7u-_0.png" alt="USTED logo">
+    <div>
+      <h1>Officer Area</h1>
+      <p>Manage elections, candidates, and voting.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ADMIN LOGIN -->
+<div id="adminLoginView" class="container">
+  <div class="auth-card">
+    <h2>Officer Login</h2>
+    <p class="sub-title">Election officers only.</p>
+    <div id="loginAlert"></div>
+    <label>Username</label>
+    <input id="adminUser" type="text" value="admin">
+    <label>Password</label>
+    <input id="adminPass" type="password" placeholder="admin123">
+    <button class="btn btn-primary btn-full mt-2" id="adminLoginBtn">Sign In</button>
+  </div>
+</div>
+
+<!-- ADMIN DASHBOARD -->
+<div id="adminDash" class="container hidden">
+
+  <div class="row mb-2">
+    <h2 style="color:var(--primary-600)">Dashboard</h2>
+    <div class="spacer"></div>
+    <button class="btn btn-outline btn-sm" id="logoutBtn">Logout</button>
+  </div>
+  <div id="dashAlert"></div>
+
+  <!-- Stats grid -->
+  <div class="grid-4" id="statsGrid"></div>
+
+  <!-- Tab navigation -->
+  <div class="tabs mt-3" id="adminTabs">
+    <button class="tab active" data-tab="elections">Elections</button>
+    <button class="tab" data-tab="positions">Positions &amp; Candidates</button>
+    <button class="tab" data-tab="voters">Voters</button>
+  </div>
+
+  <!-- TAB: Elections -->
+  <div id="tab-elections">
+    <div class="card">
+      <h2>Manage Elections</h2>
+      <div id="electionsList"></div>
+    </div>
+    <div class="card mt-3">
+      <h2>Create Election</h2>
+      <label>Title</label>
+      <input id="elTitle" type="text" placeholder="e.g. SRC Elections 2026 — Kumasi">
+      <label>Type</label>
+      <select id="elType">
+        <option value="src">SRC (Campus-wide)</option>
+        <option value="departmental">Departmental</option>
+        <option value="hall">Hall of Residence</option>
+        <option value="class">Class Representative</option>
+      </select>
+      <label>Campus</label>
+      <select id="elCampus"></select>
+      <div id="elDeptWrap" class="hidden">
+        <label>Department</label>
+        <select id="elDepartment"></select>
+      </div>
+      <div id="elHallWrap" class="hidden">
+        <label>Hall</label>
+        <select id="elHall"></select>
+      </div>
+      <div class="form-grid">
+        <div>
+          <label>Start Time</label>
+          <input id="elStart" type="datetime-local">
+        </div>
+        <div>
+          <label>End Time</label>
+          <input id="elEnd" type="datetime-local">
+        </div>
+      </div>
+      <button class="btn btn-primary btn-full mt-2" id="addElectionBtn">Create Election</button>
+    </div>
+  </div>
+
+  <!-- TAB: Positions & Candidates -->
+  <div id="tab-positions" class="hidden">
+    <div class="card">
+      <h2>Add Position</h2>
+      <label>Election</label>
+      <select id="posElection"></select>
+      <label>Title</label>
+      <input id="posTitle" type="text" placeholder="e.g. SRC President">
+      <label>Description</label>
+      <textarea id="posDesc"></textarea>
+      <div class="form-grid">
+        <div>
+          <label>Max Votes</label>
+          <input id="posMax" type="number" value="1" min="1">
+        </div>
+        <div>
+          <label>Display Order</label>
+          <input id="posOrder" type="number" value="0">
+        </div>
+      </div>
+      <button class="btn btn-primary btn-full mt-2" id="addPosBtn">Add Position</button>
+    </div>
+    <div class="card mt-3">
+      <h2>Add Candidate</h2>
+      <label>Position</label>
+      <select id="candPosition"></select>
+      <label>Full Name</label>
+      <input id="candName" type="text">
+      <label>Student / Index Number</label>
+      <input id="candStudentId" type="text">
+      <label>Department</label>
+      <select id="candDepartment"></select>
+      <label>Manifesto</label>
+      <textarea id="candManifesto"></textarea>
+      <label>Candidate Photo (optional)</label>
+      <input id="candPhoto" type="file" accept="image/jpeg,image/png,image/webp">
+      <p class="text-sm text-muted mt-1">Choose a JPG, PNG, or WebP image from this device. Maximum 5 MB.</p>
+      <button class="btn btn-primary btn-full mt-2" id="addCandBtn">Add Candidate</button>
+    </div>
+    <div class="card mt-3">
+      <h2>Current Positions &amp; Candidates</h2>
+      <div id="positionsList"></div>
+    </div>
+  </div>
+
+  <!-- TAB: Voters -->
+  <div id="tab-voters" class="hidden">
+    <div class="card">
+      <h2>Registered Voters</h2>
+      <div id="pendingArea"></div>
+    </div>
+  </div>
+
+</div>
+
+<script src="assets/js/api.js"></script>
+<script>
+const $ = (id) => document.getElementById(id);
+document.getElementById('nav').appendChild(renderNavbar('admin'));
+
+// ----- tab switching -----
+document.querySelectorAll('#adminTabs .tab').forEach(tab => {
+  tab.onclick = () => {
+    document.querySelectorAll('#adminTabs .tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    ['elections', 'positions', 'voters'].forEach(name => {
+      $('tab-' + name).classList.toggle('hidden', name !== tab.dataset.tab);
+    });
+  };
+});
+
+// ----- login -----
+$('adminLoginBtn').onclick = async () => {
+  showAlert($('loginAlert'), 'info', 'Signing in...');
+  try {
+    const r = await API.adminLogin({
+      username: $('adminUser').value.trim(),
+      password: $('adminPass').value,
+    });
+    showAlert($('loginAlert'), 'success', r.message);
+    showDashboard();
+  } catch (e) {
+    showAlert($('loginAlert'), 'error', e.message);
+  }
+};
+
+$('logoutBtn').onclick = async () => {
+  await API.logout();
+  location.reload();
+};
+
+// ----- election type toggles -----
+$('elType').onchange = () => {
+  const type = $('elType').value;
+  $('elDeptWrap').classList.toggle('hidden', !(type === 'departmental' || type === 'class'));
+  $('elHallWrap').classList.toggle('hidden', type !== 'hall');
+};
+
+// ----- campus change loads departments and halls -----
+$('elCampus').onchange = async () => {
+  const cid = parseInt($('elCampus').value, 10);
+  if (!cid) return;
+  try {
+    const [depts, halls] = await Promise.all([
+      API.departments({ campus_id: cid }),
+      API.halls({ campus_id: cid }),
+    ]);
+    const ds = $('elDepartment');
+    ds.innerHTML = '';
+    depts.departments.forEach(d => ds.appendChild(el('option', { value: d.id, text: d.name })));
+    const hs = $('elHall');
+    hs.innerHTML = '';
+    halls.halls.forEach(h => hs.appendChild(el('option', { value: h.id, text: h.name })));
+  } catch (e) { /* ignore */ }
+};
+
+// ----- create election -----
+$('addElectionBtn').onclick = async () => {
+  try {
+    const type = $('elType').value;
+    const body = {
+      title:      $('elTitle').value.trim(),
+      type:       type,
+      campus_id:  parseInt($('elCampus').value, 10),
+      start_time: $('elStart').value.replace('T', ' ') + ':00',
+      end_time:   $('elEnd').value.replace('T', ' ') + ':00',
+    };
+    if (type === 'departmental' || type === 'class') {
+      body.department_id = parseInt($('elDepartment').value, 10);
+    }
+    if (type === 'hall') {
+      body.hall_id = parseInt($('elHall').value, 10);
+    }
+    const r = await API.addElection(body);
+    showAlert($('dashAlert'), 'success', r.message);
+    ['elTitle'].forEach(f => $(f).value = '');
+    refreshAll();
+  } catch (e) {
+    showAlert($('dashAlert'), 'error', e.message);
+  }
+};
+
+// ----- add position -----
+$('addPosBtn').onclick = async () => {
+  try {
+    const r = await API.addPosition({
+      election_id: parseInt($('posElection').value, 10),
+      title:       $('posTitle').value.trim(),
+      description: $('posDesc').value.trim(),
+      max_votes:   parseInt($('posMax').value, 10) || 1,
+      display_order: parseInt($('posOrder').value, 10) || 0,
+    });
+    showAlert($('dashAlert'), 'success', r.message);
+    $('posTitle').value = ''; $('posDesc').value = '';
+    refreshAll();
+  } catch (e) { showAlert($('dashAlert'), 'error', e.message); }
+};
+
+// ----- add candidate -----
+$('addCandBtn').onclick = async () => {
+  try {
+    const r = await API.addCandidate({
+      position_id:   parseInt($('candPosition').value, 10),
+      full_name:     $('candName').value.trim(),
+      student_id:    $('candStudentId').value.trim(),
+      department_id: parseInt($('candDepartment').value, 10),
+      manifesto:     $('candManifesto').value.trim(),
+    });
+    const photo = $('candPhoto').files[0];
+    if (photo) {
+      const form = new FormData();
+      form.append('candidate_id', String(r.id));
+      form.append('photo', photo);
+      await API.uploadCandidatePhoto(form);
+    }
+    showAlert($('dashAlert'), 'success', photo ? 'Candidate added with photo.' : r.message);
+    $('candName').value = ''; $('candStudentId').value = ''; $('candManifesto').value = ''; $('candPhoto').value = '';
+    refreshAll();
+  } catch (e) { showAlert($('dashAlert'), 'error', e.message); }
+};
+
+// ----- open / close election -----
+async function openElection(id) {
+  try { const r = await API.openElection({ election_id: id }); showAlert($('dashAlert'), 'success', r.message); refreshAll(); }
+  catch (e) { showAlert($('dashAlert'), 'error', e.message); }
+}
+async function closeElection(id) {
+  try { const r = await API.closeElection({ election_id: id }); showAlert($('dashAlert'), 'success', r.message); refreshAll(); }
+  catch (e) { showAlert($('dashAlert'), 'error', e.message); }
+}
+
+async function populatePositions(electionId, electionTitle) {
+  if (!confirm('Add all standard positions for this election? This only works if the election has no positions yet.')) return;
+  try {
+    const r = await API.populatePositions({ election_id: electionId });
+    showAlert($('dashAlert'), 'success', r.message);
+    refreshAll();
+  } catch (e) { showAlert($('dashAlert'), 'error', e.message); }
+}
+
+// ----- refresh all -----
+async function refreshAll() {
+  await Promise.all([loadStats(), loadElections(), loadPending(), loadPositions(), loadCandidateDropdowns()]);
+}
+
+async function loadStats() {
+  try {
+    const s = await API.adminStats();
+    const box = $('statsGrid');
+    box.innerHTML = '';
+    const items = [
+      ['Voters', s.voters_total],
+      ['Approved', s.voters_approved],
+      ['Voted', s.voters_voted],
+      ['Elections', s.elections],
+      ['Positions', s.positions],
+      ['Candidates', s.candidates],
+      ['Votes', s.votes_total],
+    ];
+    items.forEach(([label, num]) => {
+      box.appendChild(el('div', { class: 'stat-card' }, [
+        el('div', { class: 'num', text: String(num) }),
+        el('div', { class: 'label', text: label }),
+      ]));
+    });
+  } catch (e) { /* ignore */ }
+}
+
+async function loadElections() {
+  try {
+    const data = await API.adminElections();
+    const list = $('electionsList');
+    const posSel = $('posElection');
+    list.innerHTML = '';
+    posSel.innerHTML = '';
+
+    if (data.elections.length === 0) {
+      list.appendChild(el('p', { class: 'text-muted', text: 'No elections yet. Create one above.' }));
+      return;
+    }
+
+    data.elections.forEach(e => {
+      posSel.appendChild(el('option', { value: e.id, text: e.title }));
+      const item = el('div', { class: 'election-item' });
+      const info = el('div', { class: 'info' }, [
+        el('h4', { text: e.title }),
+        el('span', { text:
+          (e.type || '').toUpperCase() + ' · ' +
+          (e.campus_name || '') +
+          (e.department_name ? ' · ' + e.department_name : '') +
+          (e.hall_name ? ' · ' + e.hall_name : '') +
+          ' · ' + e.start_time + ' to ' + e.end_time }),
+      ]);
+      const actions = el('div', { class: 'actions' });
+      actions.appendChild(el('span', { class: 'badge ' + e.status, text: e.status.toUpperCase() }));
+      const popBtn = el('button', { class: 'btn btn-outline btn-sm', text: 'Add Standard Positions' });
+      popBtn.onclick = () => populatePositions(e.id, e.title);
+      actions.appendChild(popBtn);
+      if (e.status !== 'open') {
+        const openBtn = el('button', { class: 'btn btn-gold btn-sm', text: 'Open' });
+        openBtn.onclick = () => openElection(e.id);
+        actions.appendChild(openBtn);
+      } else {
+        const closeBtn = el('button', { class: 'btn btn-danger btn-sm', text: 'Close' });
+        closeBtn.onclick = () => closeElection(e.id);
+        actions.appendChild(closeBtn);
+      }
+      item.appendChild(info);
+      item.appendChild(actions);
+      list.appendChild(item);
+    });
+  } catch (e) { /* ignore */ }
+}
+
+async function loadPending() {
+  try {
+    const data = await API.pendingVoters();
+    const area = $('pendingArea');
+    area.innerHTML = '';
+    if (data.voters.length === 0) {
+      area.appendChild(el('p', { class: 'text-muted', text: 'No voters registered yet.' }));
+      return;
+    }
+    const wrap = el('div', { class: 'voter-cards' });
+    data.voters.forEach(v => {
+      const card = el('div', { class: 'voter-card' });
+
+      // ID photo
+      const photoDiv = el('div', { class: 'voter-id-photo' });
+      if (v.id_photo_url) {
+        photoDiv.appendChild(el('img', { src: v.id_photo_url, alt: v.full_name + ' ID', onclick: 'window.open("' + v.id_photo_url + '")' }));
+      } else {
+        photoDiv.appendChild(el('div', { class: 'voter-id-placeholder', text: 'No ID photo' }));
+      }
+      card.appendChild(photoDiv);
+
+      // Details
+      const info = el('div', { class: 'voter-info' }, [
+        el('div', { class: 'voter-name', text: v.full_name }),
+        el('div', { class: 'text-sm text-muted', text: 'ID: ' + v.student_id }),
+        el('div', { class: 'text-sm', text: 'Phone: ' + (v.phone || 'N/A') }),
+        el('div', { class: 'text-sm text-muted', text: (v.department || '') + ' · Level ' + v.level + ' · ' + v.gender }),
+        el('div', { class: 'text-sm text-muted', text: v.email }),
+      ]);
+
+      // Verification badges
+      const badges = el('div', { class: 'voter-badges' });
+      if (v.otp_verified) {
+        badges.appendChild(el('span', { class: 'badge success', text: 'Phone Verified' }));
+      } else {
+        badges.appendChild(el('span', { class: 'badge warning', text: 'Phone Not Verified' }));
+      }
+      if (v.id_photo_url) {
+        badges.appendChild(el('span', { class: 'badge success', text: 'ID Uploaded' }));
+      } else {
+        badges.appendChild(el('span', { class: 'badge warning', text: 'No ID Photo' }));
+      }
+      info.appendChild(badges);
+
+      // Status badge
+      if (v.status === 'approved') {
+        info.appendChild(el('span', { class: 'badge success', text: 'Approved' }));
+      } else if (v.status === 'rejected') {
+        info.appendChild(el('span', { class: 'badge error', text: 'Rejected' }));
+      } else {
+        info.appendChild(el('span', { class: 'badge warning', text: 'Pending' }));
+      }
+
+      card.appendChild(info);
+
+      // Actions
+      const actions = el('div', { class: 'voter-actions' });
+      if (v.status === 'pending') {
+        const approveBtn = el('button', { class: 'btn btn-success btn-sm', text: 'Approve' });
+        approveBtn.onclick = () => actVoter(v.id, 'approve');
+        actions.appendChild(approveBtn);
+        const rejectBtn = el('button', { class: 'btn btn-danger btn-sm', text: 'Reject' });
+        rejectBtn.onclick = () => actVoter(v.id, 'reject');
+        actions.appendChild(rejectBtn);
+      } else if (v.status === 'approved') {
+        const rejectBtn = el('button', { class: 'btn btn-danger btn-sm', text: 'Revoke' });
+        rejectBtn.onclick = () => actVoter(v.id, 'reject');
+        actions.appendChild(rejectBtn);
+      } else if (v.status === 'rejected') {
+        const approveBtn = el('button', { class: 'btn btn-success btn-sm', text: 'Approve' });
+        approveBtn.onclick = () => actVoter(v.id, 'approve');
+        actions.appendChild(approveBtn);
+      }
+      card.appendChild(actions);
+
+      wrap.appendChild(card);
+    });
+    area.appendChild(wrap);
+  } catch (e) { /* ignore */ }
+}
+
+async function actVoter(id, kind) {
+  try {
+    const fn = kind === 'approve' ? API.approveVoter : API.rejectVoter;
+    const r = await fn({ voter_id: id });
+    showAlert($('dashAlert'), 'success', r.message);
+    refreshAll();
+  } catch (e) { showAlert($('dashAlert'), 'error', e.message); }
+}
+
+async function loadPositions() {
+  try {
+    const data = await API.adminPositions();
+    const list = $('positionsList');
+    const sel = $('candPosition');
+    list.innerHTML = '';
+    sel.innerHTML = '';
+
+    if (data.positions.length === 0) {
+      list.appendChild(el('p', { class: 'text-muted', text: 'No positions yet. Add one above.' }));
+      return;
+    }
+    data.positions.forEach(pos => {
+      sel.appendChild(el('option', { value: pos.id, text: (pos.election_title || '') + ' — ' + pos.title }));
+      const cands = pos.candidates.map(c => c.full_name + ' (' + (c.department || '?') + ')').join(', ') || 'No candidates yet';
+      list.appendChild(el('div', { class: 'position-block' }, [
+        el('h3', { text: pos.title }),
+        pos.election_title ? el('div', { class: 'text-sm text-muted', text: pos.election_title }) : null,
+        el('div', { class: 'pos-desc', text: pos.description || '' }),
+        el('p', { class: 'text-sm', text: 'Max votes: ' + pos.max_votes + ' · Order: ' + pos.display_order }),
+        el('p', { class: 'text-muted text-sm', text: 'Candidates: ' + cands }),
+      ]));
+    });
+  } catch (e) { /* ignore */ }
+}
+
+async function loadCandidateDropdowns() {
+  try {
+    const deptData = await API.departments();
+    const deptSel = $('candDepartment');
+    deptSel.innerHTML = '';
+    deptData.departments.forEach(d => {
+      deptSel.appendChild(el('option', { value: d.id, text: d.name }));
+    });
+
+    // also populate election campus dropdown
+    const campData = await API.campuses();
+    const campSel = $('elCampus');
+    campSel.innerHTML = '';
+    campData.campuses.forEach(c => {
+      campSel.appendChild(el('option', { value: c.id, text: c.name }));
+    });
+    if (campData.campuses.length > 0) {
+      campSel.onchange();
+    }
+  } catch (e) { /* ignore */ }
+}
+
+async function showDashboard() {
+  $('adminLoginView').classList.add('hidden');
+  $('adminDash').classList.remove('hidden');
+  await refreshAll();
+  maybeStartTour('admin');
+}
+
+// ----- on load -----
+(async function () {
+  try {
+    const me = await API.me();
+    if (me.authenticated && me.role === 'admin') {
+      showDashboard();
+    } else {
+      maybeStartTour('admin');
+    }
+  } catch (e) { /* stay on login */ }
+})();
+</script>
+</body>
+</html>
