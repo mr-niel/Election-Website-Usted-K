@@ -28,12 +28,21 @@ function send_sms(string $to, string $message): array
         ? 'https://api.sandbox.africastalking.com/version1/messaging'
         : 'https://api.africastalking.com/version1/messaging';
 
-    $params = http_build_query([
+    $payload = [
         'username' => AT_USERNAME,
         'to'       => $to,
         'message'  => $message,
-        'from'     => AT_SENDER_ID,
-    ]);
+    ];
+
+    // The sandbox does NOT support custom sender IDs — it rejects any
+    // "from" value with "Invalid Sender ID". Only send it in live mode,
+    // and only if the sender ID has been registered/approved on your
+    // Africa's Talking account.
+    if (!AT_SANDBOX) {
+        $payload['from'] = AT_SENDER_ID;
+    }
+
+    $params = http_build_query($payload);
 
     $ch = curl_init();
     curl_setopt_array($ch, [
