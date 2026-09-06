@@ -179,7 +179,7 @@ try {
             }
 
             // rate limit: don't allow more than 1 OTP per 60 seconds
-            $stmt = db()->prepare('SELECT otp_expires FROM voters WHERE id = ?');
+            $stmt = db()->prepare('SELECT otp_code, otp_expires FROM voters WHERE id = ?');
             $stmt->execute([$voter_id]);
             $row = $stmt->fetch();
             if ($row && $row['otp_expires']) {
