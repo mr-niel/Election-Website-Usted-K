@@ -1,60 +1,51 @@
 <?php
 /**
- * SMS Helper — Africa's Talking integration for OTP delivery.
+ * SMS Helper — mNotify (BMS API v2.0) integration for OTP delivery.
  *
- * Uses sandbox mode by default (free, no real SMS sent).
- * To go live: set AT_LIVE=true and use your real username + API key.
+ * Sends real SMS to Ghana phone numbers using the mNotify bulk SMS API.
+ * API key is passed as a GET parameter on every request.
  *
- * Africa's Talking sandbox: messages are delivered to the sandbox
- * dashboard (https://account.africastalking.com/sandbox) rather than
- * real phone numbers. This lets you test the full flow without cost.
+ * Docs: https://api.mnotify.com/api/sms/quick
  */
 
-define('AT_USERNAME', 'sandbox');
-define('AT_API_KEY', 'atsk_dbee8c96e0927371921b0927eecc610accf3593b120a2a23aab9aae8f638e83271c96b5f');
-define('AT_SENDER_ID', 'USTED');     // appears as the sender on the phone
-define('AT_SANDBOX', true);          // true = sandbox (free), false = live
+define('MNOTIFY_API_KEY', 'WeREzYyaCp23dcASc9Iskokq3');
+define('MNOTIFY_SENDER_ID', 'USTED');   // must be registered/approved on your mNotify account
 
 /**
- * Send an SMS to a single recipient.
+ * Send an SMS to a single recipient via mNotify.
  *
  * @param string $to       Phone number in international format, e.g. +233241234567
- * @param string $message  The message body (max 160 chars for a single SMS)
+ * @param string $message  The message body
  * @return array           ['success' => bool, 'message' => string, 'status' => string]
  */
 function send_sms(string $to, string $message): array
 {
-    $url = AT_SANDBOX
-        ? 'https://api.sandbox.africastalking.com/version1/messaging'
-        : 'https://api.africastalking.com/version1/messaging';
-
-    $payload = [
-        'username' => AT_USERNAME,
-        'to'       => $to,
-        'message'  => $message,
-    ];
-
-    // The sandbox does NOT support custom sender IDs — it rejects any
-    // "from" value with "Invalid Sender ID". Only send it in live mode,
-    // and only if the sender ID has been registered/approved on your
-    // Africa's Talking account.
-    if (!AT_SANDBOX) {
-        $payload['from'] = AT_SENDER_ID;
+    $local = to_mnotify_local($to);
+    if ($local === null) {
+        return ['success' => false, 'message' => 'Invalid phone number for SMS.', 'status' => 'invalid_number'];
     }
 
-    $params = http_build_query($payload);
+    $url = 'https://api.mnotify.com/api/sms/quick?key=' . urlencode(MNOTIFY_API_KEY);
+
+    $payload = json_encode([
+        'recipient'    => [$local],
+        'sender'       => MNOTIFY_SENDER_ID,
+        'message'      => $message,
+        'is_schedule'  => false,
+        'schedule_date' => '',
+        'sms_type'     => 'otp',
+    ]);
 
     $ch = curl_init();
     curl_setopt_array($ch, [
         CURLOPT_URL            => $url,
         CURLOPT_POST           => true,
-        CURLOPT_POSTFIELDS     => $params,
+        CURLOPT_POSTFIELDS     => $payload,
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_TIMEOUT        => 15,
         CURLOPT_HTTPHEADER     => [
+            'Content-Type: application/json',
             'Accept: application/json',
-            'Content-Type: application/x-www-form-urlencoded',
-            'apiKey: ' . AT_API_KEY,
         ],
     ]);
 
@@ -69,21 +60,15 @@ function send_sms(string $to, string $message): array
 
     $data = json_decode($raw, true);
 
-    if ($code >= 200 && $code < 300 && isset($data['SMSMessageData']['Recipients'])) {
-        $recipients = $data['SMSMessageData']['Recipients'];
-        if (count($recipients) > 0) {
-            $status = $recipients[0]['status'] ?? 'Unknown';
-            $cost   = $recipients[0]['cost'] ?? 'N/A';
-            return [
-                'success' => true,
-                'message' => 'SMS queued successfully.',
-                'status'  => $status,
-                'cost'    => $cost,
-            ];
-        }
+    if ($code >= 200 && $code < 300 && ($data['status'] ?? '') === 'success') {
+        return [
+            'success' => true,
+            'message' => 'SMS sent successfully.',
+            'status'  => 'success',
+        ];
     }
 
-    $errMsg = $data['SMSMessageData']['Message'] ?? ($data['errorMessage'] ?? 'Unknown SMS error');
+    $errMsg = $data['message'] ?? ($data['errorMessage'] ?? 'Unknown SMS error');
     return ['success' => false, 'message' => 'SMS failed: ' . $errMsg, 'status' => 'api_error'];
 }
 
@@ -127,6 +112,27 @@ function normalize_ghana_phone(string $input): ?string
     }
     if (preg_match('/^0\d{9}$/', $input)) {
         return '+233' . substr($input, 1);
+    }
+    return null;
+}
+
+/**
+ * Convert international format (+233241234567) to mNotify local format (0241234567).
+ * Returns null if the number is not a valid Ghana number.
+ */
+function to_mnotify_local(string $input): ?string
+{
+    $input = preg_replace('/\s+/', '', $input);
+    $input = preg_replace('/[^0-9+]/', '', $input);
+
+    if (preg_match('/^\+233(\d{9})$/', $input, $m)) {
+        return '0' . $m[1];
+    }
+    if (preg_match('/^233(\d{9})$/', $input, $m)) {
+        return '0' . $m[1];
+    }
+    if (preg_match('/^0\d{9}$/', $input)) {
+        return $input;
     }
     return null;
 }

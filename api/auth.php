@@ -205,9 +205,8 @@ try {
             }
 
             json_response([
-                'message'   => 'OTP sent to ' . $voter['phone'] . '. Check the Africa\'s Talking sandbox dashboard if in sandbox mode.',
+                'message'   => 'OTP sent to ' . $voter['phone'] . '.',
                 'phone'     => $voter['phone'],
-                'sandbox'   => AT_SANDBOX,
             ]);
             break;
 
