@@ -28,39 +28,63 @@ function send_sms(string $to, string $message): array
     $url = 'https://api.mnotify.com/api/sms/quick?key=' . urlencode(MNOTIFY_API_KEY);
 
     $payload = json_encode([
-        'recipient'    => [$local],
-        'sender'       => MNOTIFY_SENDER_ID,
-        'message'      => $message,
-        'is_schedule'  => false,
+        'recipient'     => [$local],
+        'sender'        => MNOTIFY_SENDER_ID,
+        'message'       => $message,
+        'is_schedule'   => false,
         'schedule_date' => '',
-        'sms_type'     => 'otp',
     ]);
 
-    $ch = curl_init();
-    curl_setopt_array($ch, [
-        CURLOPT_URL            => $url,
-        CURLOPT_POST           => true,
-        CURLOPT_POSTFIELDS     => $payload,
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_TIMEOUT        => 15,
-        CURLOPT_HTTPHEADER     => [
-            'Content-Type: application/json',
-            'Accept: application/json',
-        ],
-    ]);
+    $headers = [
+        'Content-Type: application/json',
+        'Accept: application/json',
+    ];
+    $raw = false;
+    $code = 0;
+    $err = '';
 
-    $raw  = curl_exec($ch);
-    $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    $err  = curl_error($ch);
-    curl_close($ch);
+    if (function_exists('curl_init')) {
+        $ch = curl_init();
+        curl_setopt_array($ch, [
+            CURLOPT_URL            => $url,
+            CURLOPT_POST           => true,
+            CURLOPT_POSTFIELDS     => $payload,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT        => 15,
+            CURLOPT_HTTPHEADER     => $headers,
+        ]);
+
+        $raw  = curl_exec($ch);
+        $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $err  = curl_error($ch);
+        curl_close($ch);
+    } else {
+        $context = stream_context_create([
+            'http' => [
+                'method'        => 'POST',
+                'header'        => implode("\r\n", $headers),
+                'content'       => $payload,
+                'timeout'       => 15,
+                'ignore_errors' => true,
+            ],
+        ]);
+        $raw = @file_get_contents($url, false, $context);
+        $statusLine = $http_response_header[0] ?? '';
+        if (preg_match('/\\s(\\d{3})\\s/', $statusLine, $matches)) {
+            $code = (int)$matches[1];
+        }
+        if ($raw === false) {
+            $err = 'Unable to connect to the SMS gateway.';
+        }
+    }
 
     if ($err) {
         return ['success' => false, 'message' => 'SMS gateway error: ' . $err, 'status' => 'network_error'];
     }
 
-    $data = json_decode($raw, true);
+    $data = json_decode((string)$raw, true);
 
-    if ($code >= 200 && $code < 300 && ($data['status'] ?? '') === 'success') {
+    if ($code >= 200 && $code < 300 && is_array($data) && ($data['status'] ?? '') === 'success') {
         return [
             'success' => true,
             'message' => 'SMS sent successfully.',
@@ -68,7 +92,21 @@ function send_sms(string $to, string $message): array
         ];
     }
 
-    $errMsg = $data['message'] ?? ($data['errorMessage'] ?? 'Unknown SMS error');
+    $errMsg = 'Unknown SMS error';
+    if (is_array($data)) {
+        $errMsg = $data['message']
+            ?? $data['error']
+            ?? $data['errorMessage']
+            ?? $data['detail']
+            ?? $errMsg;
+    } elseif (is_string($raw) && trim($raw) !== '') {
+        $errMsg = trim($raw);
+    }
+
+    if ($code > 0) {
+        $errMsg .= ' (HTTP ' . $code . ')';
+    }
+
     return ['success' => false, 'message' => 'SMS failed: ' . $errMsg, 'status' => 'api_error'];
 }
 
