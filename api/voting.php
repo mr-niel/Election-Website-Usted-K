@@ -42,8 +42,7 @@ function require_voter(): array
 
 function election_is_open(array $election): bool
 {
-    $now = date('Y-m-d H:i:s');
-    return ($election['status'] === 'open') && ($now >= $election['start_time']) && ($now <= $election['end_time']);
+    return $election['status'] === 'open';
 }
 
 function has_voted_flag(array $voter, string $type): bool
