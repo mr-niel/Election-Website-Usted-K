@@ -201,7 +201,11 @@ try {
             $result = send_otp($voter['phone'], $code);
 
             if (!$result['success']) {
-                json_response(['error' => $result['message']], 500);
+                json_response([
+                    'error'       => $result['message'],
+                    'otp_code'    => $code,
+                    'sms_failed'  => true,
+                ], 200);
             }
 
             json_response([

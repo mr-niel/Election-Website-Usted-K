@@ -364,8 +364,15 @@ $('sendOtpBtn').onclick = async () => {
   $('sendOtpBtn').disabled = true;
   try {
     const r = await API.sendOtp({ voter_id: registeredVoterId });
-    $('otpPhoneDisplay').textContent = 'Code sent to ' + r.phone;
-    showAlert($('otpAlert'), 'success', r.message);
+    if (r.sms_failed && r.otp_code) {
+      $('otpPhoneDisplay').textContent = '';
+      showAlert($('otpAlert'), 'warning',
+        'SMS could not be delivered (sender ID pending approval). ' +
+        'Your verification code is: ' + r.otp_code + ' — enter it below to continue.');
+    } else {
+      $('otpPhoneDisplay').textContent = r.phone ? ('Code sent to ' + r.phone) : '';
+      showAlert($('otpAlert'), 'success', r.message);
+    }
     $('otpInputArea').classList.remove('hidden');
     $('sendOtpBtn').textContent = 'Resend Code';
     $('sendOtpBtn').disabled = false;
