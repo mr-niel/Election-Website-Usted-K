@@ -8,8 +8,8 @@
  * Docs: https://api.mnotify.com/api/sms/quick
  */
 
-define('MNOTIFY_API_KEY', 'WeREzYyaCp23dcASc9Iskokq3');
-define('MNOTIFY_SENDER_ID', 'mNotify');
+define('MNOTIFY_API_KEY', getenv('MNOTIFY_API_KEY') ?: 'WeREzYyaCp23dcASc9Iskokq3');
+define('MNOTIFY_SENDER_ID', getenv('MNOTIFY_SENDER_ID') ?: 'USTED');
 
 /**
  * Send an SMS to a single recipient via mNotify.

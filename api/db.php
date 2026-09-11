@@ -6,10 +6,10 @@
  * Defaults below work with a standard XAMPP installation.
  */
 
-define('DB_HOST', 'localhost');
-define('DB_NAME', 'aamusted_election');
-define('DB_USER', 'root');      // default XAMPP MySQL user
-define('DB_PASS', '');          // default XAMPP MySQL password (empty)
+define('DB_HOST', getenv('DB_HOST') ?: 'localhost');
+define('DB_NAME', getenv('DB_NAME') ?: 'aamusted_election');
+define('DB_USER', getenv('DB_USER') ?: 'root');
+define('DB_PASS', getenv('DB_PASS') ?: '');
 
 /**
  * Returns a shared PDO connection.

@@ -1,0 +1,25 @@
+services:
+  - type: web
+    name: usted-elections
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /index.html
+    envVars:
+      - key: DB_HOST
+        sync: false
+      - key: DB_NAME
+        value: aamusted_election
+      - key: DB_USER
+        sync: false
+      - key: DB_PASS
+        sync: false
+      - key: MNOTIFY_API_KEY
+        sync: false
+      - key: MNOTIFY_SENDER_ID
+        value: USTED
+databases:
+  - name: usted-mysql
+  plan: free
+  databaseName: aamusted_election
+  user: usted_user
