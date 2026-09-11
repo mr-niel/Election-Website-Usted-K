@@ -9,7 +9,7 @@
  */
 
 define('MNOTIFY_API_KEY', 'WeREzYyaCp23dcASc9Iskokq3');
-define('MNOTIFY_SENDER_ID', 'USTED');   // must be registered/approved on your mNotify account
+define('MNOTIFY_SENDER_ID', 'mNotify');
 
 /**
  * Send an SMS to a single recipient via mNotify.
